@@ -390,7 +390,9 @@ class UrlGenerator implements UrlGeneratorContract
 
         $queryString = '';
         foreach (Arr::except($request->query(), 'signature') as $key => $value) {
-            $queryString .= '&'.(is_null($value) ? \urlencode($key) : \urlencode($key).'='.\urlencode($value));
+            $queryString .= '&'.(is_null($value) 
+                ? \urlencode($key) 
+                : \urlencode($key).'='.\urlencode($value));
         }
 
         $original = \rtrim($url.'?'.\ltrim($queryString, '&'), '?');
