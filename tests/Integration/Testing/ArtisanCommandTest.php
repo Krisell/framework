@@ -114,14 +114,14 @@ class ArtisanCommandTest extends TestCase
     {
         $this->expectException(AssertionFailedError::class);
         $this->expectExceptionMessage(
-            'Output "Your name is Taylor Otwell and you prefer PHP." was not printed.'.
+            'Output "Some output." was not printed.'.
             PHP_EOL.PHP_EOL.
             'No output was printed.'
         );
 
         $this->ignoringMockOnceExceptions(function () {
             $this->artisan('no-output')
-                 ->expectsOutput('Your name is Taylor Otwell and you prefer PHP.')
+                 ->expectsOutput('Some output.')
                  ->assertExitCode(0);
         });
     }
