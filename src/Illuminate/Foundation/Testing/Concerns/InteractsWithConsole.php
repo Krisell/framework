@@ -16,6 +16,13 @@ trait InteractsWithConsole
     public $mockConsoleOutput = true;
 
     /**
+     * All of the generated output lines.
+     *
+     * @var array
+     */
+    public $actualOutput = [];
+
+    /**
      * All of the expected output lines.
      *
      * @var array

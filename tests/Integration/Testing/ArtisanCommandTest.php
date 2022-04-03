@@ -36,6 +36,8 @@ class ArtisanCommandTest extends TestCase
         Artisan::command('contains', function () {
             $this->line('My name is Taylor Otwell');
         });
+
+        Artisan::command('no-output', function () {});
     }
 
     public function test_console_command_that_passes()
@@ -76,12 +78,49 @@ class ArtisanCommandTest extends TestCase
     public function test_console_command_that_fails_from_missing_output()
     {
         $this->expectException(AssertionFailedError::class);
-        $this->expectExceptionMessage('Output "Your name is Taylor Otwell and you prefer PHP." was not printed.');
+        $this->expectExceptionMessage(
+            'Output "Your name is Taylor Otwell and you prefer PHP." was not printed.'.
+            PHP_EOL.PHP_EOL.
+            'Actual output:'.PHP_EOL.'"Your name is Taylor Otwell and you prefer Ruby.',
+        );
 
         $this->ignoringMockOnceExceptions(function () {
             $this->artisan('survey')
                  ->expectsQuestion('What is your name?', 'Taylor Otwell')
                  ->expectsQuestion('Which language do you prefer?', 'Ruby')
+                 ->expectsOutput('Your name is Taylor Otwell and you prefer PHP.')
+                 ->assertExitCode(0);
+        });
+    }
+
+    public function test_console_command_that_fails_from_missing_part_of_the_output()
+    {
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage(
+            'Output "Some missing output" was not printed.'.
+            PHP_EOL.PHP_EOL.
+            'Actual output:'.PHP_EOL.'"My name is Taylor Otwell"',
+        );
+
+        $this->ignoringMockOnceExceptions(function () {
+            $this->artisan('contains')
+                 ->expectsOutput('My name is Taylor Otwell')
+                 ->expectsOutput('Some missing output')
+                 ->assertExitCode(0);
+        });
+    }
+
+    public function test_console_command_that_fails_from_missing_output_and_no_output_at_all_was_printed()
+    {
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage(
+            'Output "Your name is Taylor Otwell and you prefer PHP." was not printed.'.
+            PHP_EOL.PHP_EOL.
+            'No output was printed.'
+        );
+
+        $this->ignoringMockOnceExceptions(function () {
+            $this->artisan('no-output')
                  ->expectsOutput('Your name is Taylor Otwell and you prefer PHP.')
                  ->assertExitCode(0);
         });
@@ -124,11 +163,32 @@ class ArtisanCommandTest extends TestCase
     public function test_console_command_that_fails_if_the_output_does_not_contain()
     {
         $this->expectException(AssertionFailedError::class);
-        $this->expectExceptionMessage('Output does not contain "Otwell Taylor".');
+        $this->expectExceptionMessage(
+            'Output does not contain "Otwell Taylor".'.
+            PHP_EOL.PHP_EOL.
+            'Actual output:'.PHP_EOL.'"My name is Taylor Otwell"'
+        );
 
         $this->ignoringMockOnceExceptions(function () {
             $this->artisan('contains')
                  ->expectsOutputToContain('Otwell Taylor')
+                 ->assertExitCode(0);
+        });
+    }
+
+    public function test_console_command_that_fails_if_the_output_does_not_contain_part_of_the_expected()
+    {
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage(
+            'Output does not contain "Some missing output".'.
+            PHP_EOL.PHP_EOL.
+            'Actual output:'.PHP_EOL.'"My name is Taylor Otwell"',
+        );
+
+        $this->ignoringMockOnceExceptions(function () {
+            $this->artisan('contains')
+                 ->expectsOutputToContain('Taylor Otwell')
+                 ->expectsOutputToContain('Some missing output')
                  ->assertExitCode(0);
         });
     }
