@@ -321,11 +321,19 @@ class PendingCommand
         }
 
         if (count($this->test->expectedOutput)) {
-            $this->test->fail('Output "'.Arr::first($this->test->expectedOutput).'" was not printed.');
+            $missingOutput = Arr::first($this->test->expectedOutput);
+
+            $this->test->fail(
+                'Output "'.$missingOutput.'" was not printed.'.PHP_EOL.PHP_EOL.$this->actualOutputMessage(),
+            );
         }
 
         if (count($this->test->expectedOutputSubstrings)) {
-            $this->test->fail('Output does not contain "'.Arr::first($this->test->expectedOutputSubstrings).'".');
+            $missingOutput = Arr::first($this->test->expectedOutputSubstrings);
+
+            $this->test->fail(
+                'Output does not contain "'.$missingOutput.'".'.PHP_EOL.PHP_EOL.$this->actualOutputMessage(),
+            );
         }
 
         if ($output = array_search(true, $this->test->unexpectedOutput)) {
@@ -385,7 +393,8 @@ class PendingCommand
                 ->once()
                 ->ordered()
                 ->with($output, Mockery::any())
-                ->andReturnUsing(function () use ($i) {
+                ->andReturnUsing(function ($output) use ($i) {
+                    $this->test->actualOutput[] = $output;
                     unset($this->test->expectedOutput[$i]);
                 });
         }
@@ -393,7 +402,8 @@ class PendingCommand
         foreach ($this->test->expectedOutputSubstrings as $i => $text) {
             $mock->shouldReceive('doWrite')
                 ->withArgs(fn ($output) => str_contains($output, $text))
-                ->andReturnUsing(function () use ($i) {
+                ->andReturnUsing(function ($output) use ($i) {
+                    $this->test->actualOutput[] = $output;
                     unset($this->test->expectedOutputSubstrings[$i]);
                 });
         }
@@ -407,6 +417,10 @@ class PendingCommand
                 });
         }
 
+        $mock->shouldReceive('doWrite')->andReturnUsing(function ($output) {
+            $this->test->actualOutput[] = $output; // Record any additional output generated
+        });
+
         return $mock;
     }
 
@@ -417,12 +431,30 @@ class PendingCommand
      */
     protected function flushExpectations()
     {
+        $this->test->actualOutput = [];
         $this->test->expectedOutput = [];
         $this->test->expectedOutputSubstrings = [];
         $this->test->unexpectedOutput = [];
         $this->test->expectedTables = [];
         $this->test->expectedQuestions = [];
         $this->test->expectedChoices = [];
+    }
+
+    /**
+     * Build the message to display the actual command output.
+     *
+     * @return void
+     */
+    private function actualOutputMessage()
+    {
+        if (count($this->test->actualOutput) === 0) {
+            return 'No output was printed.';
+        }
+
+        return 'Actual output:'.PHP_EOL.implode(
+            PHP_EOL, 
+            array_map(fn ($line) => '"'.$line.'"', $this->test->actualOutput)
+        );
     }
 
     /**
